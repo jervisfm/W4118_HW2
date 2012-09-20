@@ -1157,6 +1157,11 @@ SYSCALL_DEFINE0(getpid)
 	return task_tgid_vnr(current);
 }
 
+SYSCALL_DEFINE2(ptree, struct prinfo, *buf, int, *nr)
+{
+	return 777;
+}
+
 /*
  * Accessing ->real_parent is not SMP-safe, it could
  * change from under us. However, we can use a stale
