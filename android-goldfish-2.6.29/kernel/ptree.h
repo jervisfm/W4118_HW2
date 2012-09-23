@@ -38,6 +38,13 @@ void print_task(struct task_struct *task, int depth);
 
 int list_size(struct list_head *head);
 
+struct task_struct* get_next_node(struct task_struct *cur);
+
+void process_node(int idx, struct prinfo *buf, struct task_struct *task);
+
+void dfs_procs(struct prinfo *buf, int *nr);
+
+int has_sibling(struct task_struct *task);
 /*
  * Returns the init process which is the root parent
  * of all processes on the system.

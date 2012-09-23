@@ -13,13 +13,15 @@
  */
 SYSCALL_DEFINE2(ptree, struct prinfo, *buf, int, *nr)
 {
-	printk("Hello world from kernel\n");
-	printk("Listing all processes...\n");
-	print_all_pids();
-
-	printk("******\n");
-	print_pids_dfs();
-	return 888;
+	printk("Hi");
+	acquire_tasklist_lock();
+	printk("Acquired lock!");
+	dfs_procs(buf, nr);
+	printk("Finished dfs");
+	release_tasklist_lock();
+	printk("Released tasklist");
+	//TODO return the correct thing you dumbass
+	return *nr;
 }
 
 
@@ -37,7 +39,89 @@ void print_all_pids(void)
 
 }
 
+int has_sibling(struct task_struct *task)
+{
+	struct list_head *head = &task->parent->children;
+	if (list_is_last(&task->sibling, head))
+		return false;
+	else
+		return true;
+}
 
+struct task_struct *get_next_node(struct task_struct *_cur)
+{
+	struct task_struct *cur = _cur;
+	if (has_children(cur))
+		return list_entry(
+				cur->children.next,
+				struct task_struct,
+				sibling);
+
+	while (!has_sibling(cur))
+	{
+		printk("Shane fucked up if this prints 100000 times");
+		cur = cur->parent;
+		if (cur->pid == 0)
+			return NULL;
+	}
+
+	return list_entry(
+			cur->sibling.next,
+			struct task_struct,
+			sibling);
+}
+
+void process_node(int idx, struct prinfo *buf, struct task_struct *task)
+{
+	struct prinfo to_add;
+	struct task_struct *next_sibling;
+	struct task_struct *first_child;
+
+	to_add.state = task->state;
+	to_add.pid = task->pid;
+	to_add.parent_pid = task->parent->pid;
+		
+	first_child = list_entry(
+			task->children.next,
+			struct task_struct,
+			sibling);
+	to_add.first_child_pid = first_child->pid;
+
+	next_sibling = list_entry(
+			task->sibling.next,
+			struct task_struct,
+			sibling);
+	to_add.next_sibling_pid = next_sibling->pid;
+	to_add.uid = task->real_cred->uid;
+	//TODO comment about null termination here
+	strncpy(to_add.comm, task->comm, MAX_COMM);
+
+	buf[idx] = to_add;
+}
+
+void dfs_procs(struct prinfo *buf, int *nr)
+{
+	int buf_idx = 0;	
+	struct task_struct *cur = get_init_process();
+
+	while (buf_idx  < *nr)
+	{
+		printk("In loop");
+		if (!is_a_process(cur)) {
+			cur = get_next_node(cur);
+			continue;
+		}
+
+		printk("OMG");
+		process_node(buf_idx, buf, cur);
+		buf_idx++;
+		cur = get_next_node(cur);
+
+		if (cur == NULL)
+			break;
+	}
+	*nr = buf_idx - 1;
+}
 /**
  * Prints out all the process ids in a depth first search *pre-order*
  * traversal.

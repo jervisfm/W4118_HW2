@@ -1,3 +1,5 @@
+#define MAX_COMM 64
+
 struct prinfo {
 	long state;			/* current state of process */
 	pid_t pid;			/* process id */
@@ -5,5 +7,5 @@ struct prinfo {
 	pid_t first_child_pid;  	/* pid of youngest child */
 	pid_t next_sibling_pid;  	/* pid of older sibling */
 	long uid;			/* user id of process owner */
-	char comm[64];			/* name of program executed */
+	char comm[MAX_COMM];		/* name of program executed */
 };
