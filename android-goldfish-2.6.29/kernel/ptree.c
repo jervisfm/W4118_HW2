@@ -81,18 +81,27 @@ void process_node(int idx, struct prinfo *buf, struct task_struct *task)
 	to_add.pid = task->pid;
 	to_add.parent_pid = task->parent->pid;
 		
-	first_child = list_entry(
-			task->children.next,
-			struct task_struct,
-			sibling);
-	to_add.first_child_pid = first_child->pid;
+	if (has_children(task)) {
+		first_child = list_entry(
+				task->children.next,
+				struct task_struct,
+				sibling);
+		to_add.first_child_pid = first_child->pid;
+	}
+	else
+		to_add.first_child_pid = 0;
 
-	next_sibling = list_entry(
-			task->sibling.next,
-			struct task_struct,
-			sibling);
-	to_add.next_sibling_pid = next_sibling->pid;
-	to_add.uid = task->real_cred->uid;
+	if (has_sibling(task)) {
+		next_sibling = list_entry(
+				task->sibling.next,
+				struct task_struct,
+				sibling);
+		to_add.next_sibling_pid = next_sibling->pid;
+		to_add.uid = task->real_cred->uid;
+	}
+	else
+		to_add.next_sibling_pid = 0;
+
 	//TODO comment about null termination here
 	strncpy(to_add.comm, task->comm, MAX_COMM);
 
@@ -107,7 +116,7 @@ void dfs_procs(struct prinfo *buf, int *nr)
 	while (buf_idx  < *nr)
 	{
 		printk("In loop");
-		if (!is_a_process(cur)) {
+		if (!is_a_process(cur) || cur->pid == 0) {
 			cur = get_next_node(cur);
 			continue;
 		}
