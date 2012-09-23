@@ -10,7 +10,9 @@
 #include <linux/syscalls.h>
 #include <linux/sched.h>
 #include <linux/list.h>
-
+#include <asm-generic/errno-base.h>
+#include <linux/stddef.h> /* for true and false */
+#include <asm/uaccess.h>
 
 /* Stack struct */
 struct tasklist {
@@ -42,7 +44,7 @@ struct task_struct* get_next_node(struct task_struct *cur);
 
 void process_node(int idx, struct prinfo *buf, struct task_struct *task);
 
-void dfs_procs(struct prinfo *buf, int *nr);
+int dfs_procs(struct prinfo *buf, int *nr);
 
 int has_sibling(struct task_struct *task);
 /*

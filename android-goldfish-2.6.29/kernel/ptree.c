@@ -5,7 +5,6 @@
  */
 
 #include "ptree.h"
-#include <linux/stddef.h> /* for true and false */
 
 /**
  * Defines the New System Call. You can find the corresponding
@@ -13,15 +12,46 @@
  */
 SYSCALL_DEFINE2(ptree, struct prinfo, *buf, int, *nr)
 {
+	int rv;
+	struct prinfo *kbuf;
+	int knr;
+	int rc;
+
 	printk("Hi");
+	if (*nr < 0 || buf == NULL || nr == NULL)
+		return -1 * EINVAL;
+
+	kbuf = kcalloc(*nr, sizeof(struct prinfo), GFP_KERNEL);
+	if (kbuf == NULL)
+		return -1 * ENOMEM;
+	
+	rc = copy_from_user(&knr, nr, sizeof(int));
+	if (rc != 0)
+		return -1 * EFAULT;
+
+	rc = copy_from_user(kbuf, buf, sizeof(struct prinfo) * *nr);
+	if (rc != 0)
+		return -1 * EFAULT;
+
 	acquire_tasklist_lock();
 	printk("Acquired lock!");
-	dfs_procs(buf, nr);
+	rv = dfs_procs(kbuf, &knr);
 	printk("Finished dfs");
 	release_tasklist_lock();
 	printk("Released tasklist");
+
+	rc = copy_to_user(buf, kbuf, sizeof(struct prinfo) * *nr);
+	if (rc != 0)
+		return -1 * EFAULT;
+
+	rc = copy_to_user(nr, &knr, sizeof(int));
+	if (rc != 0)
+		return -1 * EFAULT;
+
+	kfree(kbuf);
+
 	//TODO return the correct thing you dumbass
-	return *nr;
+	return rv;
 }
 
 
@@ -97,39 +127,41 @@ void process_node(int idx, struct prinfo *buf, struct task_struct *task)
 				struct task_struct,
 				sibling);
 		to_add.next_sibling_pid = next_sibling->pid;
-		to_add.uid = task->real_cred->uid;
 	}
 	else
 		to_add.next_sibling_pid = 0;
 
+	to_add.uid = task_uid(task);
 	//TODO comment about null termination here
 	strncpy(to_add.comm, task->comm, MAX_COMM);
 
 	buf[idx] = to_add;
 }
 
-void dfs_procs(struct prinfo *buf, int *nr)
+int dfs_procs(struct prinfo *buf, int *nr)
 {
-	int buf_idx = 0;	
+	int buf_idx = 0;
+	int total_count = 0;
 	struct task_struct *cur = get_init_process();
 
-	while (buf_idx  < *nr)
+	while (cur != NULL)
 	{
 		printk("In loop");
 		if (!is_a_process(cur) || cur->pid == 0) {
 			cur = get_next_node(cur);
 			continue;
 		}
-
+		total_count++;
 		printk("OMG");
-		process_node(buf_idx, buf, cur);
-		buf_idx++;
+		if (buf_idx < *nr) {
+			process_node(buf_idx, buf, cur);
+			buf_idx++;
+		}
 		cur = get_next_node(cur);
-
-		if (cur == NULL)
-			break;
 	}
-	*nr = buf_idx - 1;
+	*nr = buf_idx;
+
+	return total_count;
 }
 /**
  * Prints out all the process ids in a depth first search *pre-order*
