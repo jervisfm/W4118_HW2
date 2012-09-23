@@ -15,6 +15,11 @@ int main()
 
 	rc = syscall(223, buf, &nr);
 
+	if (rc < 0) {
+		perror("ptree");
+		return -1;
+	}
+
 //	printf("I did not crash i am a god");
 
 //	int i;

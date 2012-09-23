@@ -18,20 +18,22 @@ SYSCALL_DEFINE2(ptree, struct prinfo, *buf, int, *nr)
 	int rc;
 
 	printk("Hi");
-	if (*nr < 0 || buf == NULL || nr == NULL)
-		return -1 * EINVAL;
+	if (*nr < 0 || buf == NULL || nr == NULL) {
+		printk("\n\n%d\n\n", -EINVAL);
+		return -EINVAL;
+	}
 
 	kbuf = kcalloc(*nr, sizeof(struct prinfo), GFP_KERNEL);
 	if (kbuf == NULL)
-		return -1 * ENOMEM;
+		return -ENOMEM;
 	
 	rc = copy_from_user(&knr, nr, sizeof(int));
 	if (rc != 0)
-		return -1 * EFAULT;
+		return -EFAULT;
 
 	rc = copy_from_user(kbuf, buf, sizeof(struct prinfo) * *nr);
 	if (rc != 0)
-		return -1 * EFAULT;
+		return -EFAULT;
 
 	acquire_tasklist_lock();
 	printk("Acquired lock!");
@@ -50,7 +52,6 @@ SYSCALL_DEFINE2(ptree, struct prinfo, *buf, int, *nr)
 
 	kfree(kbuf);
 
-	//TODO return the correct thing you dumbass
 	return rv;
 }
 
