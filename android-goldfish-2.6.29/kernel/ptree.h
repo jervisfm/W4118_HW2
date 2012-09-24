@@ -22,11 +22,6 @@ struct tasklist {
 };
 
 
-void print_all_pids(void);
-
-/* Prints the pids in a dfs manner */
-void print_pids_dfs(void);
-
 /* acquires lock need to browse task */
 void acquire_tasklist_lock(void);
 
@@ -36,11 +31,7 @@ int no_children(struct task_struct *task);
 
 int has_children(struct task_struct *task);
 
-void print_task(struct task_struct *task, int depth);
-
-int list_size(struct list_head *head);
-
-struct task_struct* get_next_node(struct task_struct *cur);
+struct task_struct *get_next_node(struct task_struct *cur);
 
 void process_node(int idx, struct prinfo *buf, struct task_struct *task);
 
@@ -51,18 +42,8 @@ int has_sibling(struct task_struct *task);
  * Returns the init process which is the root parent
  * of all processes on the system.
  */
-struct task_struct* get_init_process(void);
+struct task_struct *get_init_process(void);
 
 int is_a_process(struct task_struct *task);
-
-/*
- * A Helper function
- * Add all the children processes of the task on to the
- * given list. Depth is the current depth of the
- * parent task.
- */
-int add_all_children_processes(int depth, struct list_head *head,
-			       struct task_struct *task);
-
 
 #endif /* PTREE_H_ */

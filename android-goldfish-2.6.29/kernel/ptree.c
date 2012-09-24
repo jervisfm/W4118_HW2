@@ -17,16 +17,13 @@ SYSCALL_DEFINE2(ptree, struct prinfo, *buf, int, *nr)
 	int knr;
 	int rc;
 
-	printk("Hi");
-	if (*nr < 0 || buf == NULL || nr == NULL) {
-		printk("\n\n%d\n\n", -EINVAL);
+	if (*nr < 0 || buf == NULL || nr == NULL)
 		return -EINVAL;
-	}
 
 	kbuf = kcalloc(*nr, sizeof(struct prinfo), GFP_KERNEL);
 	if (kbuf == NULL)
 		return -ENOMEM;
-	
+
 	rc = copy_from_user(&knr, nr, sizeof(int));
 	if (rc != 0)
 		return -EFAULT;
@@ -36,11 +33,8 @@ SYSCALL_DEFINE2(ptree, struct prinfo, *buf, int, *nr)
 		return -EFAULT;
 
 	acquire_tasklist_lock();
-	printk("Acquired lock!");
 	rv = dfs_procs(kbuf, &knr);
-	printk("Finished dfs");
 	release_tasklist_lock();
-	printk("Released tasklist");
 
 	rc = copy_to_user(buf, kbuf, sizeof(struct prinfo) * *nr);
 	if (rc != 0)
@@ -53,21 +47,6 @@ SYSCALL_DEFINE2(ptree, struct prinfo, *buf, int, *nr)
 	kfree(kbuf);
 
 	return rv;
-}
-
-
-/*
- * Test function:
- * Prints pids, of every single running process.
- */
-void print_all_pids(void)
-{
-	struct task_struct *task;
-	for_each_process(task) {
-		int proc = is_a_process(task);
-		printk("%s[%d] | tgid:%d Process:%d\n", task->comm, task->pid, task->tgid, proc);
-	}
-
 }
 
 int has_sibling(struct task_struct *task)
@@ -88,9 +67,7 @@ struct task_struct *get_next_node(struct task_struct *_cur)
 				struct task_struct,
 				sibling);
 
-	while (!has_sibling(cur))
-	{
-		printk("Shane fucked up if this prints 100000 times");
+	while (!has_sibling(cur)) {
 		cur = cur->parent;
 		if (cur->pid == 0)
 			return NULL;
@@ -111,15 +88,14 @@ void process_node(int idx, struct prinfo *buf, struct task_struct *task)
 	to_add.state = task->state;
 	to_add.pid = task->pid;
 	to_add.parent_pid = task->parent->pid;
-		
+
 	if (has_children(task)) {
 		first_child = list_entry(
 				task->children.next,
 				struct task_struct,
 				sibling);
 		to_add.first_child_pid = first_child->pid;
-	}
-	else
+	} else
 		to_add.first_child_pid = 0;
 
 	if (has_sibling(task)) {
@@ -128,12 +104,15 @@ void process_node(int idx, struct prinfo *buf, struct task_struct *task)
 				struct task_struct,
 				sibling);
 		to_add.next_sibling_pid = next_sibling->pid;
-	}
-	else
+	} else
 		to_add.next_sibling_pid = 0;
 
 	to_add.uid = task_uid(task);
-	//TODO comment about null termination here
+
+	/*
+	   This is guaranteed to be null terminated since, as discussed in
+	   Piazza, task_struct->comm will be less than 16 characters.
+	 */
 	strncpy(to_add.comm, task->comm, MAX_COMM);
 
 	buf[idx] = to_add;
@@ -145,15 +124,12 @@ int dfs_procs(struct prinfo *buf, int *nr)
 	int total_count = 0;
 	struct task_struct *cur = get_init_process();
 
-	while (cur != NULL)
-	{
-		printk("In loop");
+	while (cur != NULL) {
 		if (!is_a_process(cur) || cur->pid == 0) {
 			cur = get_next_node(cur);
 			continue;
 		}
 		total_count++;
-		printk("OMG");
 		if (buf_idx < *nr) {
 			process_node(buf_idx, buf, cur);
 			buf_idx++;
@@ -163,48 +139,6 @@ int dfs_procs(struct prinfo *buf, int *nr)
 	*nr = buf_idx;
 
 	return total_count;
-}
-/**
- * Prints out all the process ids in a depth first search *pre-order*
- * traversal.
- *
- */
-void print_pids_dfs(void)
-{
-	/**
-	 * Need to do this non-recursively since kernel stack is limited.
-	 * Can do it iteratively by using a stack data structure.
-	*/
-	int depth = 0; /* depth of a process */
-	struct tasklist stack;
-	struct tasklist first; /* first data item on stack */
-	struct tasklist *curr_list_item; /* an item on the stack */
-	struct task_struct *curr_task;
-	struct list_head *head; /* head of stack list*/
-
-	/* Initialize Stack */
-	INIT_LIST_HEAD(&(stack.list));
-	head = &stack.list;
-
-	/* initialize first tasklist and add it to the stack */
-	first.task = get_init_process();
-	first.depth = 0;
-	list_add(&first.list, head);
-
-	while (!list_empty(head)) {
-		/*Pop top item off the stack*/
-		curr_list_item  = list_entry(head->next,
-					     struct tasklist, list);
-		curr_task = curr_list_item->task;
-		list_del(&curr_list_item->list);
-
-		/* Process current task */
-		depth = curr_list_item->depth;
-		print_task(curr_task, depth);
-
-		 /* Add all children *processes* to the stack */
-		add_all_children_processes(depth, head, curr_task);
-	}
 }
 
 void acquire_tasklist_lock(void)
@@ -229,22 +163,10 @@ int no_children(struct task_struct *task)
 	if (task == NULL)
 		return 0;
 	children = &task->children;
-	if (list_empty(children)) {
+	if (list_empty(children))
 		return true;
-	} else {
+	else
 		return false;
-	}
-}
-/*
- * Prints the task struct.
- */
-void print_task(struct task_struct *task, int depth)
-{
-	int i = 0;
-	for (i = 0; i < depth; ++i) {
-		printk("\t");
-	}
-	printk("%s\n", task->comm);
 }
 
 /**
@@ -261,25 +183,11 @@ int has_children(struct task_struct *task)
 	return !no_children(task);
 }
 
-/**
- * Determines the size of the given list
- */
-int list_size(struct list_head *head) {
-	int size = 0;
-	struct list_head *curr;
-
-	if (head == NULL)
-		return 0;
-
-	for (curr = head->next; curr != head; curr = curr->next)
-		++size;
-	return size;
-}
-
 /*
  * Returns the init process task struct.
  */
-struct task_struct* get_init_process(void) {
+struct task_struct *get_init_process(void)
+{
 	return &init_task;
 }
 
@@ -287,7 +195,8 @@ struct task_struct* get_init_process(void) {
  * Determines if the given task struct is a process or not.
  * Return 1 if true and 0 if false
  */
-int is_a_process(struct task_struct *task) {
+int is_a_process(struct task_struct *task)
+{
 	if (thread_group_empty(task))
 		return true; /* A process with 0 threads */
 	else  {
@@ -299,30 +208,3 @@ int is_a_process(struct task_struct *task) {
 	return false;
 }
 
-int add_all_children_processes(int depth, struct list_head *head,
-			       struct task_struct *task) {
-	if (head == NULL || task == NULL)
-		return 0;
-
-	if (has_children(task)) {
-		struct task_struct* temp;
-		struct list_head *child_list = &task->children;
-		++depth;
-		/* Use 'sibling' field because the children of a parent task
-		 * are all siblings of another. Thus, parent->children
-		 * is a list_head embedded in a task_struct of a child process,
-		 *  and it actually references the sibling field.
-		 */
-		list_for_each_entry(temp, child_list, sibling) {
-			struct tasklist *new;
-			if (!is_a_process(temp))
-				continue;
-
-			new = kcalloc(1, sizeof(struct tasklist), GFP_KERNEL);
-			new->task = temp;
-			list_add(&new->list,head);
-			new->depth = depth;
-		}
-	}
-	return true;
-}
