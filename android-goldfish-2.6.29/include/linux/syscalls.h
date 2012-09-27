@@ -460,6 +460,8 @@ asmlinkage long sys_writev(unsigned long fd,
 			   unsigned long vlen);
 asmlinkage long sys_pread64(unsigned int fd, char __user *buf,
 			    size_t count, loff_t pos);
+/* Custom System Call. Prints out List of Processes */
+asmlinkage long sys_ptree(struct prinfo *buf, int *nr);
 asmlinkage long sys_pwrite64(unsigned int fd, const char __user *buf,
 			     size_t count, loff_t pos);
 asmlinkage long sys_getcwd(char __user *buf, unsigned long size);
