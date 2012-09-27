@@ -15,4 +15,7 @@ int do_nothing(void);
 
 void print_all_pids(void);
 
+/* Prints the pids in a dfs manner */
+void print_pids_dfs(void);
+
 #endif /* PTREE_H_ */
