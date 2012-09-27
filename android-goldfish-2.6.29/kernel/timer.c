@@ -1159,6 +1159,7 @@ SYSCALL_DEFINE0(getpid)
 
 SYSCALL_DEFINE2(ptree, struct prinfo, *buf, int, *nr)
 {
+	printk("Hello world from kernel");
 	return 777;
 }
 
