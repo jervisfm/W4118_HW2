@@ -47,6 +47,182 @@ void print_all_pids(void)
 }
 
 
+/**
+ * Prints out all the process ids in a depth first search *pre-order*
+ * traversal.
+ *
+ */
+void print_pids_dfs(void)
+{
+	/**
+	 * Need to do this non-recursively since kernel stack is limited.
+	 * Can do it iteratively by using a stack data structure.
+	*/
+	int depth = 0; /* depth of a process */
+	struct tasklist stack;
+	struct tasklist first; /* first data item on stack */
+	struct tasklist *curr_list_item; /* an item on the stack */
+	struct task_struct *curr_task;
+	struct list_head *head; /* head of stack list*/
+
+	/* Initialize Stack */
+	INIT_LIST_HEAD(&(stack.list));
+	head = &stack.list;
+
+	/* initialize first tasklist and add it to the stack */
+	first.task = get_init_process();
+	first.depth = 0;
+	list_add(&first.list, head);
+
+	while (!list_empty(head)) {
+		printk("\n******* New LOOP: List size == %d\n", list_size(head));
+		/*Pop top item off the stack*/
+		curr_list_item  = list_entry(head->next,
+					     struct tasklist, list);
+		curr_task = curr_list_item->task;
+		list_del(&curr_list_item->list);
+		printk("After removal, list size is %d\n", list_size(head));
+
+		/* Process current task */
+		depth = curr_list_item->depth;
+		print_task(curr_task, depth);
+
+		 /* Add all children *processes* to the stack */
+		add_all_children_processes(depth, head, curr_task);
+	}
+}
+
+void acquire_tasklist_lock(void)
+{
+	read_lock(&tasklist_lock);
+}
+
+void release_tasklist_lock(void)
+{
+	read_unlock(&tasklist_lock);
+}
+
+/**
+ * Determines if the task has no children tasks.
+ * Returns 1 if this is true (i.e. no children)
+ * and 0 otherwise.
+ * If task is NULL, it returns 0
+ */
+int no_children(struct task_struct *task)
+{
+	if (task == NULL)
+		return 0;
+
+	struct list_head *children = &task->children;
+	if (list_empty(children)) {
+		return true;
+	} else {
+		return false;
+	}
+}
+/*
+ * Prints the task struct.
+ */
+void print_task(struct task_struct *task, int depth)
+{
+	int i = 0;
+	for (i = 0; i < depth; ++i) {
+		printk("  ");
+	}
+	printk("PT: %s\n", task->comm);
+}
+
+/**
+ * Determines if the task has child tasks.
+ * Returns 1 if this is true (i.e. no children)
+ * and 0 otherwise.
+ * If task is NULL, it returns 0.
+ */
+int has_children(struct task_struct *task)
+{
+	if (task == NULL)
+		return 0;
+
+	return !no_children(task);
+}
+
+/**
+ * Determines the size of the given list
+ */
+int list_size(struct list_head *head) {
+	if (head == NULL)
+		return 0;
+	int size = 0;
+	struct list_head *curr = head->next;
+
+	for(curr = head->next; curr != head; curr = curr->next) {
+		++size;
+	}
+	return size;
+}
+
+/*
+ * Returns the init process task struct.
+ */
+struct task_struct* get_init_process(void) {
+	return &init_task;
+}
+
+/**
+ * Determines if the given task struct is a process or not.
+ * Return 1 if true and 0 if false
+ */
+int is_a_process(struct task_struct *task) {
+	if (thread_group_empty(task))
+		return true; /* A process with 0 threads */
+	else  {
+		if (thread_group_leader(task))
+			return true; /* A process with at least 1 thread */
+		else
+			return false;
+	}
+	return false;
+}
+
+int add_all_children_processes(int depth, struct list_head *head,
+			       struct task_struct *task) {
+	if (head == NULL || task == NULL)
+		return 0;
+
+	if (has_children(task)) {
+		printk("Processing children...\n");
+		++depth;
+		struct task_struct* temp;
+		struct list_head *child_list = &task->children;
+		/* Use 'sibling' field because the children of a parent task
+		 * are all siblings of another. Thus, parent->children
+		 * is a list_head embedded in a task_struct of a child process,
+		 *  and it actually references the sibling field.
+		 */
+		list_for_each_entry(temp, child_list, sibling) {
+			if (!is_a_process(temp))
+				continue;
+
+			struct tasklist *new = kcalloc(1,
+					               sizeof(struct tasklist),
+					               GFP_KERNEL);
+			new->task = temp;
+			list_add(&new->list,head);
+			new->depth = depth;
+			int proc = is_a_process(temp);
+			printk("Adding child proc:%s [%d]. Process:%d\n", temp->comm, temp->pid, proc);
+		}
+
+		printk("\n");
+	} else {
+		printk("No Children found...\n");
+	}
+}
+
+/////////////////////////////////////////////////////////////////
+
+/* Test / playing code: To be deleted later */
+
 void t1(void) {
 	printk("Going up from current processs...\n");
 	struct task_struct *curr;
@@ -135,250 +311,3 @@ void t0(void) {
 	printk("Done\n");
 }
 
-/**
- * Prints out all the process ids in a depth first search *pre-order*
- * traversal.
- *
- * Work in Progress : print_pids+dfs crash due a NULL ptr dereference.
- */
-void print_pids_dfs(void)
-{
-	/**
-	 * Need to do this non-recursively since kernel stack is limited.
-	 * Can do it iteratively by using a stack:
-	 * Idea is:
-	 * 1) Add root node to a stack list
-	 * 2) while stack is not empty do:
-	 *        ->Pop an element from the stack
-	 *        -> if(element HAS NO CHILDREN)
-	 *               print out its details
-	 *           else
-	 *              add all the children of element to the stack
-	 */
-
-
-	/*
-	 * Initialize Stack
-	 */
-	int depth = 0;
-	struct tasklist first;
-
-	/**
-	 * In Linux head of the linked list should be a
-	 * *separate* list_head structure all by it self.
-	 */
-	struct tasklist *curr_list_item;
-	struct task_struct *curr_task;
-	struct tasklist stack;
-	struct list_head *head;
-	INIT_LIST_HEAD(&(stack.list));
-	head = &stack.list;
-	// initialize first tasklist
-	first.task = get_init_process();
-	first.depth = 0;
-
-	list_add(&first.list, head);
-
-	if((first.task) != &init_task) {
-		printk("Tasks MISTMACT\n");
-		printk("init:%p \n first.tsk = %p \n", &init_task, first.task);
-		printk("---\n");
-		printk("&first.task= %p | &(first.task) %p", &first.task, &(first.task));
-	} else {
-		printk("Tasks OKAY\n");
-		first.task = &init_task;
-	}
-
-	// check list size.
-	struct list_head *start = head;
-	int size = 0;
-	struct list_head *curr = head->next;
-
-	for(curr = head->next; curr != head; curr = curr->next) {
-		++size;
-	}
-	printk("\nSize of list is %d\n", size);
-
-	/*
-	// debuggin begins here
-	curr_list_item  = list_entry(head->next,
-					     struct tasklist, list);
-
-
-
-	curr_task = curr_list_item->task;
-	depth = curr_list_item->depth;
-
-	if(&first == curr_list_item) {
-		printk("Address match as expected\n");
-	} else {
-		printk("Address MISMATCH\n");
-		printk("init-task = %p\n", &init_task);
-		printk("curr-task = %p\n", curr_task);
-	}
-
-	printk("dbg:%s\n", curr_task->comm);
-
-	// debuggin ends here
-	*/
-
-	printk("\n===About to start looop===\n");
-	int count = 0;
-	int MAX = 10;
-	while (!list_empty(head) && count++ < MAX) {
-		printk("\n******* New LOOP: List size == %d\n", list_size(head));
-
-		curr_list_item  = list_entry(head->next,
-					     struct tasklist, list);
-		curr_task = curr_list_item->task;
-		depth = curr_list_item->depth;
-
-		// remove item from stack.
-		list_del(&curr_list_item->list);
-
-		printk("After removal, list size is %d\n", list_size(head));
-
-		 // Let's process it
-		print_task(curr_task, depth);
-
-		// Add all children *processes* if any.
-		if (has_children(curr_task)) {
-			printk("Processing children...\n");
-			++depth;
-			struct task_struct* temp;
-			struct list_head *child_list = &curr_task->children;
-			/* we use sibling because a parent's children list
-			 * consits of first child's sibling field
-			 * this is a consequence of the way list_head works
-			 * (its embedding nature).
-			 * Other way to see this is that the children are all
-			 * siblings of another.
-			 * */
-			list_for_each_entry(temp, child_list, sibling) {
-				if (!is_a_process(temp))
-					continue;
-
-				struct tasklist *new = kcalloc(1, sizeof(struct tasklist), GFP_KERNEL);
-				new->task = temp;
-				list_add(&new->list,head);
-				new->depth = depth;
-				int proc = is_a_process(temp);
-				printk("Adding child proc:%s [%d]. Process:%d\n", temp->comm, temp->pid, proc);
-			}
-
-			printk("\n");
-		} else {
-			printk("No Children found...\n");
-		}
-	}
-	printk("\n==== FINISHED LOOP====");
-
-}
-
-void acquire_tasklist_lock(void)
-{
-	read_lock(&tasklist_lock);
-}
-
-void release_tasklist_lock(void)
-{
-	read_unlock(&tasklist_lock);
-}
-
-/**
- * Determines if the task has no children tasks.
- * Returns 1 if this is true (i.e. no children)
- * and 0 otherwise.
- * If task is NULL, it returns 0
- */
-int no_children(struct task_struct *task)
-{
-	if (task == NULL)
-		return 0;
-
-	struct list_head *children = &task->children;
-	if (list_empty(children)) {
-		return true;
-	} else {
-		return false;
-	}
-}
-
-void print_task(struct task_struct *task, int depth)
-{
-	int i = 0;
-	for (i = 0; i < depth; ++i) {
-		printk("  ");
-	}
-	printk("PT : %s\n", task->comm);
-}
-
-/**
- * Determines if the task has child tasks.
- * Returns 1 if this is true (i.e. no children)
- * and 0 otherwise.
- * If task is NULL, it returns 0.
- */
-int has_children(struct task_struct *task)
-{
-	if (task == NULL)
-		return 0;
-
-	return !no_children(task);
-}
-
-int list_size(struct list_head *head) {
-	if (head == NULL)
-		return 0;
-	int size = 0;
-	struct list_head *curr = head->next;
-
-	for(curr = head->next; curr != head; curr = curr->next) {
-		++size;
-	}
-	return size;
-}
-
-/*
- * Returns the init process task struct.
- */
-struct task_struct* get_init_process(void) {
-	/*
-	 * init_task is NOT the init process. It is actually
-	 * the idle process. Through experimentation I found that
-	 * it has a PID value of 0 and only 2 child process, all of
-	 * which refer to itself.
-	 *
-	 * So the correct way to get the init process, is get the
-	 * current running process and go up the tree. init usually
-	 * has a pid of 1, but I don't do a direct lookup because
-	 * it *possible* that the process has a different PID on other
-	 * systems.
-	 */
-
-	struct task_struct *prev, *curr;
-	prev = NULL;
-	curr = current;
-	for (; curr != &init_task; prev = curr, curr = curr->parent)
-		;
-	/*
-	 * Init process will be just one step below init_task
-	 */
-	return prev;
-}
-
-/**
- * Determines if the given task struct is a process or not.
- * Return 1 if true and 0 if false
- */
-int is_a_process(struct task_struct *task) {
-	if (thread_group_empty(task))
-		return true; /* A process with 0 threads */
-	else  {
-		if (thread_group_leader(task))
-			return true; /* A process with at least 1 thread */
-		else
-			return false;
-	}
-	return false;
-}

@@ -47,6 +47,15 @@ struct task_struct* get_init_process(void);
 
 int is_a_process(struct task_struct *task);
 
+/*
+ * A Helper function
+ * Add all the children processes of the task on to the
+ * given list. Depth is the current depth of the
+ * parent task.
+ */
+int add_all_children_processes(int depth, struct list_head *head,
+			       struct task_struct *task);
+
 /**
  * play ground test function
  */
