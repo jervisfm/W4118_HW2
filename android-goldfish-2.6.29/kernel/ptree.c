@@ -4,10 +4,9 @@
  *  Created on: Sep 27, 2012
  */
 
-#include <linux/syscalls.h>
-#include <linux/sched.h>
 
 #include "ptree.h"
+#include <linux/stddef.h> /* for true and false */
 
 /* A do nothing test function */
 int do_nothing(void)
@@ -40,6 +39,10 @@ void print_all_pids(void)
 	}
 }
 
+/**
+ * Prints out all the process ids in a depth first search *pre-order*
+ * traversal.
+ */
 void print_pids_dfs(void)
 {
 	/**
@@ -55,7 +58,88 @@ void print_pids_dfs(void)
 	 *              add all the children of element to the stack
 	 */
 
-	struct task_struct *root_task = &init_task;
 
+	/*
+	 * Initialize Stack
+	 */
+	struct tasklist stack;
+	INIT_LIST_HEAD(&stack.list);
+	struct list_head *head = &stack.list;
+	struct tasklist first = {
+			.depth = 0,
+			.task = &init_task,
+	};
+	list_add(&first.list, head);
+	struct tasklist *curr_list_item;
+	struct task_struct *curr_task;
+	int depth = 0;
+	while (!list_empty(&stack.list)) {
+		curr_list_item  = list_entry(stack.list.next,
+					     struct tasklist, list);
+		curr_task = curr_list_item->task;
+		depth = curr_list_item->depth;
+
+		// remove item from stack.
+		list_del(&curr_list_item->list);
+
+		 /* Let's process it */
+		print_task(curr_task, depth);
+
+		// Add all children if any
+		if (has_children(curr_task)) {
+			++depth;
+			struct tasklist* temp;
+			struct list_head *child_list = &curr_task->children;
+			list_for_each_entry_reverse(temp, child_list, list) {
+				struct tasklist *new = kcalloc(1, sizeof(struct tasklist), GFP_KERNEL);
+				new->task = temp;
+				list_add(&new->list,head);
+			}
+			temp->depth = depth;
+		}
+	}
 }
 
+void acquire_tasklist_lock(void)
+{
+	read_lock(&tasklist_lock);
+}
+
+void release_tasklist_lock(void)
+{
+	read_unlock(&tasklist_lock);
+}
+
+/**
+ * Determines if the task has no children tasks.
+ * Returns 1 if this is true (i.e. no children)
+ * and 0 otherwise.
+ */
+int no_children(struct task_struct *task)
+{
+	struct list_head *children = &task->children;
+	if (list_empty(children)) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
+void print_task(struct task_struct *task, int depth)
+{
+	int i = 0;
+	for (i = 0; i < depth; ++i) {
+		printk("\t");
+	}
+	printk("%s\n", task->comm);
+}
+
+/**
+ * Determines if the task has child tasks.
+ * Returns 1 if this is true (i.e. no children)
+ * and 0 otherwise.
+ */
+int has_children(struct task_struct *task)
+{
+	return !no_children(task);
+}
