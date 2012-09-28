@@ -75,13 +75,11 @@ void print_pids_dfs(void)
 	list_add(&first.list, head);
 
 	while (!list_empty(head)) {
-		printk("\n******* New LOOP: List size == %d\n", list_size(head));
 		/*Pop top item off the stack*/
 		curr_list_item  = list_entry(head->next,
 					     struct tasklist, list);
 		curr_task = curr_list_item->task;
 		list_del(&curr_list_item->list);
-		printk("After removal, list size is %d\n", list_size(head));
 
 		/* Process current task */
 		depth = curr_list_item->depth;
@@ -127,9 +125,9 @@ void print_task(struct task_struct *task, int depth)
 {
 	int i = 0;
 	for (i = 0; i < depth; ++i) {
-		printk("  ");
+		printk("\t");
 	}
-	printk("PT: %s\n", task->comm);
+	printk("PT	: %s\n", task->comm);
 }
 
 /**
@@ -190,7 +188,6 @@ int add_all_children_processes(int depth, struct list_head *head,
 		return 0;
 
 	if (has_children(task)) {
-		printk("Processing children...\n");
 		++depth;
 		struct task_struct* temp;
 		struct list_head *child_list = &task->children;
@@ -209,8 +206,8 @@ int add_all_children_processes(int depth, struct list_head *head,
 			new->task = temp;
 			list_add(&new->list,head);
 			new->depth = depth;
-			int proc = is_a_process(temp);
-			printk("Adding child proc:%s [%d]. Process:%d\n", temp->comm, temp->pid, proc);
+			//int proc = is_a_process(temp);
+			//printk("Adding child proc:%s [%d]. Process:%d\n", temp->comm, temp->pid, proc);
 		}
 
 		printk("\n");
