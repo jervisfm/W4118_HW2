@@ -23,6 +23,10 @@ SYSCALL_DEFINE2(ptree, struct prinfo, *buf, int, *nr)
 	printk("Hello world from kernel\n");
 	printk("Listing all processes...\n");
 	print_all_pids();
+
+	printk("******\n");
+	// print_pids_dfs();
+
 	return 888;
 }
 
@@ -37,11 +41,14 @@ void print_all_pids(void)
 	for_each_process(task) {
 		printk("%s[%d] | tgid:%d\n", task->comm, task->pid, task->tgid);
 	}
+
 }
 
 /**
  * Prints out all the process ids in a depth first search *pre-order*
  * traversal.
+ *
+ * Work in Progress : print_pids+dfs crash due a NULL ptr dereference.
  */
 void print_pids_dfs(void)
 {
@@ -62,27 +69,60 @@ void print_pids_dfs(void)
 	/*
 	 * Initialize Stack
 	 */
-	struct tasklist stack;
-	INIT_LIST_HEAD(&stack.list);
-	struct list_head *head = &stack.list;
+	int depth = 0;
 	struct tasklist first = {
-			.depth = 0,
-			.task = &init_task,
+		.depth = 0,
+		.task = &init_task,
 	};
-	list_add(&first.list, head);
 	struct tasklist *curr_list_item;
 	struct task_struct *curr_task;
-	int depth = 0;
+	struct tasklist stack;
+	struct list_head *head;
+	INIT_LIST_HEAD(&(stack.list));
+	head = &stack.list;
+	list_add(&first.list, head);
+
+	if(&(first.task) != &init_task) {
+		printk("Tasks MISTMACT\n");
+	} else {
+		first.task = &init_task;
+	}
+
+	// check list size.
+	struct list_head *start = head;
+	int size = 1;
+	struct list_head *curr = head->next;
+	while(curr != start) {
+		curr = curr->next;
+		++size;
+	}
+
+	return;
+
+	/*
 	while (!list_empty(&stack.list)) {
-		curr_list_item  = list_entry(stack.list.next,
+		curr_list_item  = list_entry(head->next,
 					     struct tasklist, list);
+
+		printk("Line 88 \n");
 		curr_task = curr_list_item->task;
 		depth = curr_list_item->depth;
+
+		if(&first == curr_list_item) {
+			printk("Address match as expected\n");
+		} else {
+			printk("Address MISMATCH\n");
+			printk("init-task = %d\n", &init_task);
+			printk("curr-task = %d\n", curr_task);
+		}
+
+		printk("dbg:%s\n", curr_task->comm);
+
 
 		// remove item from stack.
 		list_del(&curr_list_item->list);
 
-		 /* Let's process it */
+		 // Let's process it
 		print_task(curr_task, depth);
 
 		// Add all children if any
@@ -92,12 +132,12 @@ void print_pids_dfs(void)
 			struct list_head *child_list = &curr_task->children;
 			list_for_each_entry_reverse(temp, child_list, list) {
 				struct tasklist *new = kcalloc(1, sizeof(struct tasklist), GFP_KERNEL);
-				new->task = temp;
+				new->task = temp->task;
 				list_add(&new->list,head);
 			}
 			temp->depth = depth;
 		}
-	}
+	} */
 }
 
 void acquire_tasklist_lock(void)
