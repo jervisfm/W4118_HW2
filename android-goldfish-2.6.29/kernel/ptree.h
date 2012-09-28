@@ -37,4 +37,20 @@ int has_children(struct task_struct *task);
 
 void print_task(struct task_struct *task, int depth);
 
+int list_size(struct list_head *head);
+
+/*
+ * Returns the init process which is the root parent
+ * of all processes on the system.
+ */
+struct task_struct* get_init_process(void);
+
+int is_a_process(struct task_struct *task);
+
+/**
+ * play ground test function
+ */
+void t0(void);
+void t1(void);
+
 #endif /* PTREE_H_ */
