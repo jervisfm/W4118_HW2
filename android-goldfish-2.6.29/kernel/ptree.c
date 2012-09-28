@@ -4,7 +4,6 @@
  *  Created on: Sep 27, 2012
  */
 
-
 #include "ptree.h"
 #include <linux/stddef.h> /* for true and false */
 
