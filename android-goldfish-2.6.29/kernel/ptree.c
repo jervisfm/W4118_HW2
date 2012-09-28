@@ -111,7 +111,8 @@ int no_children(struct task_struct *task)
 	if (task == NULL)
 		return 0;
 
-	struct list_head *children = &task->children;
+	struct list_head *children;
+	children = &task->children;
 	if (list_empty(children)) {
 		return true;
 	} else {
@@ -127,7 +128,7 @@ void print_task(struct task_struct *task, int depth)
 	for (i = 0; i < depth; ++i) {
 		printk("\t");
 	}
-	printk("PT	: %s\n", task->comm);
+	printk("%s\n", task->comm);
 }
 
 /**
@@ -209,11 +210,8 @@ int add_all_children_processes(int depth, struct list_head *head,
 			//int proc = is_a_process(temp);
 			//printk("Adding child proc:%s [%d]. Process:%d\n", temp->comm, temp->pid, proc);
 		}
-
-		printk("\n");
-	} else {
-		printk("No Children found...\n");
 	}
+	return 1;
 }
 
 /////////////////////////////////////////////////////////////////
@@ -307,4 +305,3 @@ void t0(void) {
 	}
 	printk("Done\n");
 }
-
