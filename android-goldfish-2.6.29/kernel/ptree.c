@@ -8,12 +8,6 @@
 #include "ptree.h"
 #include <linux/stddef.h> /* for true and false */
 
-/* A do nothing test function */
-int do_nothing(void)
-{
-	return 0;
-}
-
 /**
  * Defines the New System Call. You can find the corresponding
  * declaration in linux/syscalls.h
@@ -26,8 +20,6 @@ SYSCALL_DEFINE2(ptree, struct prinfo, *buf, int, *nr)
 
 	printk("******\n");
 	print_pids_dfs();
-	//t0();
-	//t1();
 	return 888;
 }
 
@@ -108,10 +100,9 @@ void release_tasklist_lock(void)
  */
 int no_children(struct task_struct *task)
 {
+	struct list_head *children;
 	if (task == NULL)
 		return 0;
-
-	struct list_head *children;
 	children = &task->children;
 	if (list_empty(children)) {
 		return true;
@@ -149,14 +140,14 @@ int has_children(struct task_struct *task)
  * Determines the size of the given list
  */
 int list_size(struct list_head *head) {
+	int size = 0;
+	struct list_head *curr;
+
 	if (head == NULL)
 		return 0;
-	int size = 0;
-	struct list_head *curr = head->next;
 
-	for(curr = head->next; curr != head; curr = curr->next) {
+	for (curr = head->next; curr != head; curr = curr->next)
 		++size;
-	}
 	return size;
 }
 
@@ -189,119 +180,24 @@ int add_all_children_processes(int depth, struct list_head *head,
 		return 0;
 
 	if (has_children(task)) {
-		++depth;
 		struct task_struct* temp;
 		struct list_head *child_list = &task->children;
+		++depth;
 		/* Use 'sibling' field because the children of a parent task
 		 * are all siblings of another. Thus, parent->children
 		 * is a list_head embedded in a task_struct of a child process,
 		 *  and it actually references the sibling field.
 		 */
 		list_for_each_entry(temp, child_list, sibling) {
+			struct tasklist *new;
 			if (!is_a_process(temp))
 				continue;
 
-			struct tasklist *new = kcalloc(1,
-					               sizeof(struct tasklist),
-					               GFP_KERNEL);
+			new = kcalloc(1, sizeof(struct tasklist), GFP_KERNEL);
 			new->task = temp;
 			list_add(&new->list,head);
 			new->depth = depth;
-			//int proc = is_a_process(temp);
-			//printk("Adding child proc:%s [%d]. Process:%d\n", temp->comm, temp->pid, proc);
 		}
 	}
-	return 1;
-}
-
-/////////////////////////////////////////////////////////////////
-
-/* Test / playing code: To be deleted later */
-
-void t1(void) {
-	printk("Going up from current processs...\n");
-	struct task_struct *curr;
-	for(curr = current; curr != &init_task; curr = curr->parent) {
-		printk("[%d] - %s\n", curr->pid, curr->comm);
-		printk("No. children == %d\n", list_size(&curr->children));
-		printk("No. sibling == %d\n", list_size(&curr->sibling));
-
-		printk("Enumerating children m1...\n");
-		struct task_struct *temp;
-		list_for_each_entry(temp, &curr->children, sibling) {
-			int proc = is_a_process(temp);
-			printk("[%d] - %s. Process:%d\n", temp->pid, temp->comm, proc);
-		}
-
-		printk("Enumerating children M2...\n");
-		struct list_head *list;
-		list_for_each(list, &curr->children) {
-			temp = list_entry(list, struct task_struct, sibling);
-			int proc = is_a_process(temp);
-			printk("[%d] - %s. Process:%d\n", temp->pid, temp->comm, proc);
-		}
-
-		printk("=======Enumerating sibling...\n");
-		list_for_each_entry(temp, &curr->sibling, sibling) {
-			int proc = is_a_process(temp);
-			printk("[%d] - %s. Process:%d\n", temp->pid, temp->comm, proc);
-		}
-
-		printk("\n------\n");
-	}
-
-	printk("No. of init children == %d\n", list_size(&curr->children));
-	printk("No. of init sibling == %d\n", list_size(&curr->sibling));
-
-}
-
-void t0(void) {
-	struct task_struct *t = &init_task;
-	struct task_struct *tt = &init_task;
-
-	printk("Init stats:\n");
-	printk("No. of init children == %d\n", list_size(&t->children));
-	printk("No. of init sibling == %d\n", list_size(&t->sibling));
-
-	tt = list_entry(&t->children, struct task_struct, children);
-	printk("[%d] - '%s'\n", tt->pid, tt->comm);
-	tt = list_entry(&t->children.next, struct task_struct, children);
-	printk("[%d] - '%s'\n", tt->pid, tt->comm);
-
-	printk("Going up from current processs...\n");
-	struct task_struct *curr;
-	for(curr = current; curr != &init_task; curr = curr->parent) {
-		printk("[%d] - %s\n", curr->pid, curr->comm);
-		printk("No. children == %d\n", list_size(&curr->children));
-		printk("No. sibling == %d\n", list_size(&curr->sibling));
-
-		printk("Enumerating children...\n");
-		struct task_struct *temp;
-		list_for_each_entry(temp, &curr->children, children) {
-			int proc = is_a_process(temp);
-			printk("[%d] - %s. Process:%d\n", temp->pid, temp->comm, proc);
-		}
-
-		printk("=======Enumerating sibling...\n");
-		list_for_each_entry(temp, &curr->sibling, sibling) {
-			int proc = is_a_process(temp);
-			printk("[%d] - %s. Process:%d\n", temp->pid, temp->comm, proc);
-		}
-
-		printk("\n------\n");
-	}
-
-	struct task_struct *i = get_init_process();
-	printk("Attempting to get init process\n");
-	printk("[%d] - %s ", i->pid, i->comm);
-	printk("No. of init proc children == %d\n", list_size(&i->children));
-	printk("**************\n");
-
-	printk("Enumerating init children...");
-	struct task_struct *temp;
-	list_for_each_entry(temp, &i->children, children) {
-		int proc = is_a_process(temp);
-		printk("[%d] - %s. Process:%d\n", temp->pid, temp->comm, proc);
-	}
-	printk("Done\n");
+	return true;
 }

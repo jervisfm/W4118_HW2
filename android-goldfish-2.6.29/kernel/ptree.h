@@ -11,7 +11,6 @@
 #include <linux/sched.h>
 #include <linux/list.h>
 
-int do_nothing(void);
 
 /* Stack struct */
 struct tasklist {
@@ -56,10 +55,5 @@ int is_a_process(struct task_struct *task);
 int add_all_children_processes(int depth, struct list_head *head,
 			       struct task_struct *task);
 
-/**
- * play ground test function
- */
-void t0(void);
-void t1(void);
 
 #endif /* PTREE_H_ */
