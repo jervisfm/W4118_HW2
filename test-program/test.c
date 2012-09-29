@@ -17,10 +17,12 @@ int main()
 //	printf("I did not crash i am a god");
 
 	int i;
-	for (i = 0; i < nr; i++) {
-		struct prinfo p = buf[i];
+	//for (i = 0; i < nr; i++) {
+	//	struct prinfo p = buf[i];
 				//printf("%s\n", buf[i].comm);
-	}
+	//}
+
+	print_tree(buf, nr);
 
 	printf("\nTotal entries: %d\n", rc);
 	return 0;
