@@ -36,6 +36,7 @@ int main()
 
 void print_tree(struct prinfo *tree, const int size){
 	int id_stack[size];
+	id_stack[0] = 0;
 	int num_tabs = 0;
 	int i = 0;
 	for(i = 0; i < size; i++){
