@@ -27,9 +27,21 @@ int main()
 }
 
 void print_tree(struct prinfo *tree, int size){
+	int id_stack[size] = { 0 };
+	int num_tabs = 0;
+	int i = 0;
+	for(int i = 0; i < size; i++){
+		while(tree[i].parent_id != id_stack[num_tabs]){
+			num_tabs--;
+		}
+		print_prinfo(num_tabs, tree[i]);
+		num_tabs++;
+		id_stack[num_tabs] = tree[i].pid;
+	}
+	
 }
 
-void print_prinfo(int count){
+void print_prinfo(int count, struct prinfo p){
 	char returned[count+1];
 	int i = 0;
 	for(i=0; i<count; i++)
