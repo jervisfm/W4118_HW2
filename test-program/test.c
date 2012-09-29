@@ -16,7 +16,7 @@ int main()
 
 //	printf("I did not crash i am a god");
 
-	int i;
+//	int i;
 	//for (i = 0; i < nr; i++) {
 	//	struct prinfo p = buf[i];
 				//printf("%s\n", buf[i].comm);
@@ -28,8 +28,8 @@ int main()
 	return 0;
 }
 
-void print_tree(struct prinfo *tree, int size){
-	int id_stack[size] = { 0 };
+void print_tree(struct prinfo *tree, const int size){
+	int id_stack[size];
 	int num_tabs = 0;
 	int i = 0;
 	for(int i = 0; i < size; i++){
