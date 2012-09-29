@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "../android-goldfish-2.6.29/include/linux/prinfo.h" 
+#include "test.h"
 
 int main()
 {
@@ -32,8 +33,8 @@ void print_tree(struct prinfo *tree, const int size){
 	int id_stack[size];
 	int num_tabs = 0;
 	int i = 0;
-	for(int i = 0; i < size; i++){
-		while(tree[i].parent_id != id_stack[num_tabs]){
+	for(i = 0; i < size; i++){
+		while(tree[i].parent_pid != id_stack[num_tabs]){
 			num_tabs--;
 		}
 		print_prinfo(num_tabs, tree[i]);
@@ -49,7 +50,7 @@ void print_prinfo(int count, struct prinfo p){
 	for(i=0; i<count; i++)
 		returned[i] = '\t'; 
 	returned[count] = '\0';
-	printf("%s %s,%d,%ld,%d,%d,%d,%ld\n", &returned, p.comm, p.pid, p.state,
+	printf("%s %s,%d,%ld,%d,%d,%d,%ld\n", returned, p.comm, p.pid, p.state,
 			p.parent_pid, p.first_child_pid, p.next_sibling_pid, p.uid);
 
 }
