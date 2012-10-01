@@ -4,14 +4,27 @@
 #include "../android-goldfish-2.6.29/include/linux/prinfo.h" 
 #include "test.h"
 
-int main()
+int main(int argc, char** argv)
 {
 	struct prinfo *buf;
 	int nr;
 	int rc;
 
-	nr = 100;
-	buf = malloc(sizeof(struct prinfo) * nr);
+	/* Initialize NR value. */
+	if (argc <= 1) /* no parameters passed */ {		
+		nr = DEFAULT_NR_ARG; 	}
+	else {
+		if (is_number(argv[1]))
+			nr = atoi(argv[1]);
+		else
+			nr = DEFAULT_NR_ARG;	
+	}
+
+	buf = calloc(nr, sizeof(struct prinfo));
+	if (buf == NULL) {
+		printf("Could not allocate buffer to store processes info\n");
+		exit(-1);
+	}
 
 	rc = syscall(223, buf, &nr);
 
@@ -19,14 +32,6 @@ int main()
 		perror("ptree");
 		return -1;
 	}
-
-//	printf("I did not crash i am a god");
-
-//	int i;
-	//for (i = 0; i < nr; i++) {
-	//	struct prinfo p = buf[i];
-				//printf("%s\n", buf[i].comm);
-	//}
 
 	print_tree(buf, nr);
 
@@ -59,4 +64,19 @@ void print_prinfo(int count, struct prinfo p){
 	printf("%s %s,%d,%ld,%d,%d,%d,%ld\n", returned, p.comm, p.pid, p.state,
 			p.parent_pid, p.first_child_pid, p.next_sibling_pid, p.uid);
 
+}
+
+int is_number(char *string)
+{
+	int i = 0; 
+
+	if (string == NULL)
+		return 0;
+
+	for (; string[i] != '\0'; ++i) {
+		if (!isdigit(string[i])) {
+			return 0;
+		}
+	}
+	return 1;
 }
