@@ -1,1 +1,52 @@
-Please answer part 4 of programming assignment here.
+Operating Systems Homework 2:
+Part 4: Investigate Android Process Tree
+
+
+Question A: 
+
+We started the emulator and did nothing else except for executing ptree_test. The fields that we saw change was the first-child-pid of the sh process and the pid of the ptree_test process. Here is an a snippet of the (changed) output between runs: 
+
+
+Run 1:
+adbd,46,1,1,550,49,0
+                 sh,550,1,46,556,0,0
+                         ptree_test,556,0,550,0,0,0
+
+
+Run 2:
+         adbd,46,1,1,550,49,0
+                 sh,550,1,46,557,0,0
+                         ptree_test,557,0,550,0,0,0
+
+
+The format of the parameters is executable name, pid, process state, process parent pid, process first child id, process next sibling id, process owner user id. 
+
+
+The other fields did not change because we did not start any other processes on the system. The field of uid which determines the user id of the process owner is not likely to change because a process is typically associated and owned by a single user. The parent id of a process is another field that is not likely to change either unless for instance the parent of a process dies and goes away in which case the children processes are reparented to the init process (on Linux systems).  The name of the executable is another field that is not likely to change. 
+
+
+A field that is more likely to change relative to the other ones discussed is the pid of a process assuming that a new process is created of course. For example, in the example given, when we re-run ptree_test it acquired a new pid of 557.
+
+
+So different fields change with different frequency because these changes reflect the number and state of the processes that are currently running on the system. If a new process is created, it will get a new pid so that field will be different. If a parent dies and goes away, then it’s children parent pid will be reassigned. 
+
+
+B. When the browser is started, one process, called android.browser, spawns up as a child of the zygote process. When the home button is pressed, no processes are immediately destroyed. From this, we can infer that pressing the home button on Android does not necessarily immediately quit the opened application.
+
+
+C. 
+i. A Zygote is the initial cell formed when a new organism is produced.  In the context of the Android OS, the Zygote is a process which gets started up by init and allows use of shared libraries without copying. This process allows shared libraries which are read only to exist in a single place [1]. The main purpose of this process is to enable a newly launched Android application which runs in its instance of the Dalvik virtual machine to start up quickly by reusing shared read-only resources of the zygote process which is also a Dalvik VM[2]
+
+
+        ii. If there is a zygote binary, we could not find it. The process exists because it is created on system start and is simply a copy of shared libraries. 
+
+
+It is also possible that the name of the created process was explicitly overwritten and set to “zygote” when the process was created. 
+
+
+        iii. Embedded systems favor a zygote like system because it allows processes to share read only resources, in turn putting less of a resource strain on applications with already low resource limitations. That is rather than having an application process have its own copy of a resource that is not really modified, it makes more sense in these constrained environments to create such resources once in a single process and grant access to these resources to any other process that needs access to them. In this way, you are able to run maximize the use of the limited computing resources that are inherent in embedded systems. 
+
+
+References:
+[1] http://coltf.blogspot.com/p/android-os-processes-and-zygote.html 
+[2] http://davidehringer.com/software/android/The_Dalvik_Virtual_Machine.pdf
