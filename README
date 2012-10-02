@@ -98,7 +98,63 @@ output is given below:
 You will notice that the ptree_test program takes in an optional parameter that determines how many processes should
 be returned. (This is the nr value)
 
-Running ptree_test with no arguments defaults the number to 100. 
+Running ptree_test with no arguments defaults the number to 100. You should an output like this:
+
+# ./ptree_test
+./ptree_test
+ init,1,1,0,29,2,0
+         ueventd,29,1,1,0,30,0
+         servicemanager,30,1,1,0,31,1000
+         vold,31,1,1,0,33,0
+         netd,33,1,1,0,34,0
+         debuggerd,34,1,1,0,35,0
+         rild,35,1,1,0,36,1001
+         surfaceflinger,36,1,1,0,37,1000
+         zygote,37,1,1,148,38,0
+                 system_server,148,1,37,0,149,1000
+                 ndroid.systemui,203,1,37,0,207,10022
+                 m.android.phone,233,1,37,0,234,1001
+                 ndroid.launcher,246,1,37,0,248,10009
+                 ndroid.settings,270,1,37,0,273,1000
+                 ndroid.contacts,297,1,37,0,299,10001
+                 d.process.acore,318,1,37,0,320,10001
+                 com.android.mms,353,1,37,0,356,10002
+                 d.process.media,369,1,37,0,371,10010
+                 putmethod.latin,386,1,37,0,389,10000
+                 m.android.email,415,1,37,0,417,10005
+                 ndroid.exchange,432,1,37,0,434,10031
+                 droid.deskclock,451,1,37,0,454,10030
+                 viders.calendar,474,1,37,0,476,10036
+                 ndroid.calendar,504,1,37,0,506,10019
+         drmserver,38,1,1,0,39,1019
+         mediaserver,39,1,1,0,40,1013
+         installd,40,1,1,0,41,0
+         keystore,41,1,1,0,42,1017
+         qemud,42,1,1,0,45,0
+         sh,45,1,1,0,46,2000
+         adbd,46,1,1,554,49,0
+                 sh,554,1,46,564,0,0
+                         ptree_test,564,0,554,0,0,0
+ kthreadd,2,1,0,3,0,0
+         ksoftirqd/0,3,1,2,0,4,0
+         events/0,4,1,2,0,5,0
+         khelper,5,1,2,0,6,0
+         suspend,6,1,2,0,7,0
+         kblockd/0,7,1,2,0,8,0
+         cqueue,8,1,2,0,9,0
+         kseriod,9,1,2,0,10,0
+         kmmcd,10,1,2,0,11,0
+         pdflush,11,1,2,0,12,0
+         pdflush,12,1,2,0,13,0
+         kswapd0,13,1,2,0,14,0
+         aio/0,14,1,2,0,24,0
+         mtdblockd,24,1,2,0,25,0
+         kstriped,25,1,2,0,26,0
+         hid_compat,26,1,2,0,27,0
+         rpciod/0,27,1,2,0,28,0
+         mmcqd,28,1,2,0,0,0
+
+Total entries: 51
 
 
 Coding Style
