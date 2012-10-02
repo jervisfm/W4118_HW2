@@ -36,6 +36,7 @@ int main(int argc, char **argv)
 	print_tree(buf, nr);
 
 	printf("\nTotal entries: %d\n", rc);
+	free(buf);
 	return 0;
 }
 
