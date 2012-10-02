@@ -1,0 +1,114 @@
+Operating Systems I
+Homework II
+Readme
+1st October 2012
+
+About
+============================
+We added a new system call to Android Linux
+Kernel. This system call is called ptree and it returns
+into the given buffer a depth first pre-order list of 
+processes running on the system. The return value of the system call
+is total actual number of process running. 
+
+
+Code Changed
+==============
+
+The main relevant files added are: 
+
+include/linux/prinfo.h -> Includes a structure that defines the information about a process that is returned.
+This structure is defined as follows:
+struct prinfo {
+	long state;			/* current state of process */
+	pid_t pid;			/* process id */
+	pid_t parent_pid;		/* process id of parent */
+	pid_t first_child_pid;  	/* pid of youngest child */
+	pid_t next_sibling_pid;  	/* pid of older sibling */
+	long uid;			/* user id of process owner */
+	char comm[64];			/* name of program executed */
+};
+
+kernel/ptree.c ->  System call implementation
+kernel/ptree.h -> Header file
+
+
+How to Compile Kernel
+=====================
+The first time you type: 
+Change directory to the kernel root folder. Then execute: 
+
+make ARCH=arm goldfish_armv7_defconfig 
+make ARCH=arm CROSS_COMPILE=arm-none-linux-gnueabi-
+
+
+On Subsequent recompiles, it is easier to make a short cut by doing:
+alias armmake="make -j2 ARCH=arm CROSS_COMPILE=arm-none-linux-gnueabi-"
+
+Then you can run the re-compile by just doing: "armmake"
+
+
+How to Compile Test Program
+===========================
+
+Change directory into the 'test-program' folder. Then execute:
+make
+
+
+How to Run Test Program
+==================
+I'm assuming you have Android SDK tools in your Path. 
+1) Compile Test Program
+2) Compile Kernel
+3) Start an Android emulator with the modified kernel image by doing: 
+emulator -avd OS_W41118 -kernel arch\arm\boot\zImage -show-kernel -no-snapshot-load
+
+4) Push the new binary to the Running Emulator: 
+adb push test-program\ptree_test /data/misc
+
+5) Open a shell into the emulator:
+adb shell
+
+6) Execute the test program
+/data/misc/ptree_test
+
+NB: If you get an execution error and you're on Windows, then run this command first. 
+cd /data/misc
+chmod 751 *
+
+Then try running the test program again. 
+
+Error Handling
+=================
+We did our best to handle error conditions gracefully in both the kernel code and the test user program. 
+
+
+Testing
+=================
+We tested our system call by running the test-program on the emulator. An example output of the test
+output is given below: 
+
+./ptree_test 5
+ init,1,1,0,29,2,0
+         ueventd,29,1,1,0,30,0
+         servicemanager,30,1,1,0,31,1000
+         vold,31,1,1,0,33,0
+         netd,33,1,1,0,34,0
+
+You will notice that the ptree_test program takes in an optional parameter that determines how many processes should
+be returned. (This is the nr value)
+
+Running ptree_test with no arguments defaults the number to 100. 
+
+
+Coding Style
+=============
+The code style used is consistent with that of the linux kernel coding style.
+You can run the checkpatch.pl[1] with the arguments --no-tree -f [FILE_NAME]
+to validate that the style was followed.
+
+Example:
+./checkpatch.pl --no-tree -f ptree.c
+
+[1] - You can download checkpath script from: https://github.com/mirrors/linux-2.6/blob/master/scripts/checkpatch.pl
+
